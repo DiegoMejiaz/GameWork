@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Juego Educativo</title>
+  <link rel="stylesheet" href="styles/main.css" />
+</head>
+<body>
+  <div id="app">
+
+    <!-- ===========================================================
+         PANTALLA 1: BIENVENIDA (introducir nombre)
+    ============================================================ -->
+    <section class="screen" data-screen="welcome">
+      <div class="screen-content screen--centered">
+        <div class="logo" aria-hidden="true">🎮</div>
+        <h1 class="title text-center">¡Bienvenido!</h1>
+        <p class="subtitle text-center" id="welcomeSubtitle">
+          ¿Cómo te llamas hoy?
+        </p>
+
+        <form id="nameForm" class="form" novalidate>
+          <label for="playerName" class="form-label">
+            Escribe tu nombre
+          </label>
+          <input
+            type="text"
+            id="playerName"
+            class="form-input"
+            autocomplete="off"
+            maxlength="20"
+            placeholder="Tu nombre aquí"
+            required
+          />
+          <button type="submit" class="btn btn--primary btn--lg">
+            ¡Continuar! →
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- ===========================================================
+         PANTALLA 2: MENÚ PRINCIPAL
+    ============================================================ -->
+    <section class="screen" data-screen="menu" hidden>
+      <header class="menu-header">
+        <div class="player-chip" id="playerChip">
+          <span class="player-chip__icon">👩‍🎓</span>
+          <span class="player-chip__name" id="playerChipName">Jugador</span>
+          <button class="player-chip__edit" id="editNameBtn" title="Cambiar nombre" aria-label="Cambiar nombre">
+            ✏️
+          </button>
+        </div>
+      </header>
+
+      <div class="screen-content screen--centered">
+        <h1 class="title" id="menuTitle">¡Hola, Jugador!</h1>
+        <p class="subtitle text-center">¿Qué quieres hacer hoy?</p>
+
+        <nav class="menu-nav" aria-label="Menú principal">
+          <button class="menu-card" data-action="go-selector">
+            <span class="menu-card__icon">🎮</span>
+            <span class="menu-card__title">Jugar</span>
+            <span class="menu-card__desc">Elige un minijuego</span>
+          </button>
+
+          <button class="menu-card" data-action="go-highscores">
+            <span class="menu-card__icon">🏆</span>
+            <span class="menu-card__title">Mejores Puntuaciones</span>
+            <span class="menu-card__desc">Mira los récords</span>
+          </button>
+
+          <button class="menu-card" data-action="go-settings">
+            <span class="menu-card__icon">⚙️</span>
+            <span class="menu-card__title">Ajustes</span>
+            <span class="menu-card__desc">Configura la app</span>
+          </button>
+        </nav>
+      </div>
+    </section>
+
+    <!-- ===========================================================
+         PANTALLA 3: SELECTOR DE MINIJUEGOS
+    ============================================================ -->
+    <section class="screen" data-screen="selector" hidden>
+      <header class="top-bar">
+        <button class="btn btn--ghost btn-back" data-action="go-menu">
+          ← Volver
+        </button>
+        <h2 class="top-bar__title">Elige un juego</h2>
+        <span aria-hidden="true"></span>
+      </header>
+
+      <div class="screen-content">
+        <div class="games-grid" id="gamesGrid">
+          <!-- Renderizado dinámico desde GameRegistry -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ===========================================================
+         PANTALLA 4: JUEGO (Contenedor para cualquier minijuego)
+    ============================================================ -->
+    <section class="screen" data-screen="game" hidden>
+      <header class="top-bar game-hud">
+        <button class="btn btn--ghost btn-back" data-action="exit-game" aria-label="Salir del juego">
+          ← Salir
+        </button>
+        <div class="game-hud__info">
+          <span class="hud-item" id="hudLives" title="Vidas">💚💚💚</span>
+          <span class="hud-item" id="hudScore" title="Puntos">0 puntos</span>
+          <span class="hud-item" id="hudTimer" title="Tiempo">⏱️ 00:30</span>
+        </div>
+        <span aria-hidden="true"></span>
+      </header>
+
+      <div class="screen-content screen--game">
+        <!-- Aquí inyecta su contenido el minijuego activo -->
+        <div id="gameContainer" class="game-container"></div>
+      </div>
+    </section>
+
+    <!-- ===========================================================
+         PANTALLA 5: RESULTADOS
+    ============================================================ -->
+    <section class="screen" data-screen="results" hidden>
+      <div class="screen-content screen--centered">
+        <div class="results-card">
+          <h1 class="title text-center" id="resultsTitle">¡Fin de la partida!</h1>
+          <p class="subtitle text-center" id="resultsSubtitle">Buen trabajo</p>
+
+          <div class="stars" id="resultsStars" aria-label="Estrellas obtenidas">
+            ⭐⭐⭐
+          </div>
+
+          <ul class="results-stats" id="resultsStats">
+            <li><span>Puntos</span><strong id="statScore">0</strong></li>
+            <li><span>Aciertos</span><strong id="statHits">0 / 0</strong></li>
+            <li><span>Mejor récord</span><strong id="statBest">0</strong></li>
+          </ul>
+
+          <div class="results-actions">
+            <button class="btn btn--primary" data-action="restart-game">
+              🔄 Jugar de nuevo
+            </button>
+            <button class="btn btn--secondary" data-action="go-menu">
+              🏠 Menú principal
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===========================================================
+         PANTALLA 6 (extra): HIGH SCORES (placeholder simple)
+    ============================================================ -->
+    <section class="screen" data-screen="highscores" hidden>
+      <header class="top-bar">
+        <button class="btn btn--ghost btn-back" data-action="go-menu">
+          ← Volver
+        </button>
+        <h2 class="top-bar__title">🏆 Mejores Puntuaciones</h2>
+        <span aria-hidden="true"></span>
+      </header>
+
+      <div class="screen-content screen--centered">
+        <div class="placeholder-card">
+          <h3>¡Próximamente!</h3>
+          <p>Aquí aparecerán las mejores puntuaciones.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===========================================================
+         PANTALLA 7 (extra): AJUSTES (placeholder simple)
+    ============================================================ -->
+    <section class="screen" data-screen="settings" hidden>
+      <header class="top-bar">
+        <button class="btn btn--ghost btn-back" data-action="go-menu">
+          ← Volver
+        </button>
+        <h2 class="top-bar__title">⚙️ Ajustes</h2>
+        <span aria-hidden="true"></span>
+      </header>
+
+      <div class="screen-content screen--centered">
+        <div class="placeholder-card">
+          <h3>¡Próximamente!</h3>
+          <p>Aquí podrás cambiar nombre, dificultad y sonido.</p>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Scripts en orden: dependencias primero -->
+  <script src="scripts/data/texts.js"></script>
+  <script src="scripts/games/quiz.js"></script>
+  <script src="scripts/main.js"></script>
+</body>
+</html>

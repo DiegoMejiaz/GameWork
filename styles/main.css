@@ -1,0 +1,653 @@
+/* ==========================================================================
+   JUEGO EDUCATIVO - styles/main.css
+   Todo el CSS en 1 archivo para FASE 1 (simplicidad).
+   Variables al principio para fácil cambio de tema en el futuro.
+   ========================================================================== */
+
+/* ---------- 1. VARIABLES DE TEMA (Cartoon Educativo Moderno) ---------- */
+:root {
+  --color-primary: #4a90e2;
+  --color-primary-dark: #357ab8;
+  --color-secondary: #f5a623;
+  --color-secondary-dark: #d48e14;
+  --color-success: #7ed321;
+  --color-success-dark: #64a81a;
+  --color-error: #d0021b;
+  --color-error-dark: #a00215;
+  --color-bg: #f0f4ff;
+  --color-bg-gradient-start: #e0f0ff;
+  --color-bg-gradient-end: #fff4e0;
+  --color-card: #ffffff;
+  --color-text: #2c3e50;
+  --color-text-light: #7f8c8d;
+  --color-border: #dce4f0;
+  --color-muted: #ecf0f1;
+
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-xl: 32px;
+
+  --shadow-sm: 0 2px 4px rgba(44, 62, 80, 0.1);
+  --shadow-md: 0 4px 12px rgba(44, 62, 80, 0.12);
+  --shadow-lg: 0 8px 24px rgba(44, 62, 80, 0.16);
+  --shadow-btn: 0 4px 0 var(--color-primary-dark);
+
+  --font-family: 'Nunito', 'Fredoka', 'Segoe UI', Roboto, Arial, sans-serif;
+  --font-size-xs: 14px;
+  --font-size-sm: 16px;
+  --font-size-md: 18px;
+  --font-size-lg: 22px;
+  --font-size-xl: 28px;
+  --font-size-2xl: 36px;
+  --font-size-3xl: 48px;
+
+  --btn-min-h: 56px;
+  --btn-min-w: 160px;
+
+  --space-xs: 8px;
+  --space-sm: 12px;
+  --space-md: 20px;
+  --space-lg: 32px;
+  --space-xl: 48px;
+
+  --transition-fast: 150ms ease;
+  --transition: 250ms ease;
+  --transition-slow: 400ms ease;
+
+  --screen-max-w: 1200px;
+}
+
+/* ---------- 2. RESET BÁSICO ---------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  font-family: var(--font-family);
+  font-size: var(--font-size-md);
+  color: var(--color-text);
+  line-height: 1.5;
+  background: linear-gradient(
+    135deg,
+    var(--color-bg-gradient-start) 0%,
+    var(--color-bg-gradient-end) 100%
+  );
+  background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+h1, h2, h3, h4 { font-weight: 800; line-height: 1.2; }
+button { font-family: inherit; cursor: pointer; border: none; background: none; }
+input { font-family: inherit; }
+ul { list-style: none; }
+img, svg { display: block; max-width: 100%; }
+
+:focus-visible {
+  outline: 3px solid var(--color-secondary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* ---------- 3. LAYOUT GENERAL ---------- */
+#app {
+  min-height: 100vh;
+  max-width: var(--screen-max-w);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-md);
+}
+
+.screen {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 2 * var(--space-md));
+  animation: screenFadeIn var(--transition) both;
+}
+
+.screen[hidden] {
+  display: none;
+}
+
+.screen-content {
+  flex: 1;
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: var(--space-lg) var(--space-md);
+}
+
+.screen--centered {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+@keyframes screenFadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ---------- 4. TIPOGRAFÍA ---------- */
+.title {
+  font-size: var(--font-size-3xl);
+  margin-bottom: var(--space-sm);
+  color: var(--color-primary-dark);
+}
+
+.subtitle {
+  font-size: var(--font-size-lg);
+  color: var(--color-text-light);
+  margin-bottom: var(--space-lg);
+}
+
+.text-center { text-align: center; }
+
+.logo {
+  font-size: 80px;
+  margin-bottom: var(--space-md);
+  animation: logoBounce 2s ease-in-out infinite;
+}
+
+@keyframes logoBounce {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-10px); }
+}
+
+/* ---------- 5. BOTONES ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  min-height: var(--btn-min-h);
+  min-width: var(--btn-min-w);
+  padding: var(--space-sm) var(--space-lg);
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  border-radius: var(--radius-lg);
+  transition: transform var(--transition-fast),
+              box-shadow var(--transition-fast),
+              background-color var(--transition-fast),
+              opacity var(--transition-fast);
+  color: #fff;
+  user-select: none;
+}
+
+.btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 transparent;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn--primary {
+  background: var(--color-primary);
+  box-shadow: 0 4px 0 var(--color-primary-dark);
+}
+.btn--primary:hover:not(:disabled) { background: var(--color-primary-dark); }
+
+.btn--secondary {
+  background: var(--color-secondary);
+  box-shadow: 0 4px 0 var(--color-secondary-dark);
+  color: #fff;
+}
+.btn--secondary:hover:not(:disabled) { background: var(--color-secondary-dark); }
+
+.btn--ghost {
+  background: transparent;
+  color: var(--color-primary-dark);
+  min-width: auto;
+  min-height: 44px;
+  padding: var(--space-xs) var(--space-sm);
+  box-shadow: none;
+  border-radius: var(--radius-md);
+}
+.btn--ghost:hover {
+  background: var(--color-muted);
+  transform: none;
+}
+
+.btn--lg {
+  min-height: 68px;
+  font-size: var(--font-size-xl);
+  padding: var(--space-sm) var(--space-xl);
+}
+
+/* ---------- 6. FORMULARIOS ---------- */
+.form {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.form-label {
+  font-size: var(--font-size-md);
+  font-weight: 700;
+  color: var(--color-text);
+  text-align: left;
+}
+
+.form-input {
+  width: 100%;
+  min-height: 56px;
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--font-size-lg);
+  border: 3px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-card);
+  color: var(--color-text);
+  transition: border-color var(--transition-fast),
+              box-shadow var(--transition-fast);
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 4px rgba(74, 144, 226, 0.2);
+}
+
+/* ---------- 7. MENÚ PRINCIPAL ---------- */
+.menu-header {
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--space-sm);
+}
+
+.player-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-sm);
+  background: var(--color-card);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  border: 2px solid var(--color-border);
+}
+
+.player-chip__icon { font-size: 28px; }
+.player-chip__name {
+  font-weight: 700;
+  color: var(--color-primary-dark);
+  padding-right: var(--space-xs);
+}
+
+.player-chip__edit {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--color-muted);
+  font-size: 16px;
+  transition: background var(--transition-fast),
+              transform var(--transition-fast);
+}
+.player-chip__edit:hover {
+  background: var(--color-secondary);
+  transform: rotate(-15deg);
+}
+
+.menu-nav {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--space-lg);
+  width: 100%;
+  max-width: 860px;
+  margin: var(--space-xl) 0;
+}
+
+.menu-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-sm);
+  padding: var(--space-xl) var(--space-md);
+  background: var(--color-card);
+  border: 3px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  transition: transform var(--transition),
+              border-color var(--transition),
+              box-shadow var(--transition);
+  color: var(--color-text);
+}
+
+.menu-card:hover {
+  transform: translateY(-6px);
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-lg);
+}
+
+.menu-card:active {
+  transform: translateY(-2px);
+}
+
+.menu-card__icon {
+  font-size: 64px;
+  margin-bottom: var(--space-sm);
+}
+
+.menu-card__title {
+  font-size: var(--font-size-xl);
+  font-weight: 800;
+  color: var(--color-primary-dark);
+}
+
+.menu-card__desc {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-light);
+}
+
+/* ---------- 8. TOP BAR (Selector, Juego, HighScores) ---------- */
+.top-bar {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-sm) 0;
+  min-height: 72px;
+}
+
+.top-bar__title {
+  font-size: var(--font-size-xl);
+  color: var(--color-primary-dark);
+  text-align: center;
+}
+
+.btn-back {
+  font-weight: 700;
+  font-size: var(--font-size-md);
+}
+
+/* ---------- 9. SELECTOR DE MINIJUEGOS ---------- */
+.games-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--space-lg);
+  padding: var(--space-lg) 0;
+}
+
+.game-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  background: var(--color-card);
+  border: 3px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  transition: transform var(--transition),
+              border-color var(--transition),
+              box-shadow var(--transition);
+}
+
+.game-card:hover {
+  transform: translateY(-6px);
+  border-color: var(--color-secondary);
+  box-shadow: var(--shadow-lg);
+}
+
+.game-card__header {
+  padding: var(--space-xl) var(--space-lg) var(--space-md);
+  text-align: center;
+  background: linear-gradient(135deg, #e3f2fd 0%, #fff3e0 100%);
+}
+
+.game-card__icon {
+  font-size: 88px;
+  margin-bottom: var(--space-sm);
+}
+
+.game-card__body {
+  padding: var(--space-md) var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  flex: 1;
+}
+
+.game-card__name {
+  font-size: var(--font-size-xl);
+  font-weight: 800;
+  color: var(--color-primary-dark);
+  text-align: center;
+}
+
+.game-card__desc {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-light);
+  text-align: center;
+  flex: 1;
+}
+
+.game-card__footer {
+  padding: 0 var(--space-lg) var(--space-lg);
+}
+
+.game-card__play {
+  width: 100%;
+}
+
+/* ---------- 10. JUEGO (HUD + container) ---------- */
+.game-hud {
+  position: sticky;
+  top: 0;
+  background: var(--color-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  min-height: 72px;
+  z-index: 10;
+}
+
+.game-hud__info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-lg);
+  flex-wrap: wrap;
+}
+
+.hud-item {
+  font-size: var(--font-size-md);
+  font-weight: 800;
+  padding: var(--space-xs) var(--space-md);
+  background: var(--color-muted);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  white-space: nowrap;
+}
+
+.screen--game {
+  padding-top: var(--space-md);
+}
+
+.game-container {
+  min-height: 400px;
+  background: var(--color-card);
+  border: 3px dashed var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-xl);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ---------- 11. PLACEHOLDER Quiz (FASE 1) ---------- */
+.quiz-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+  text-align: center;
+  max-width: 540px;
+}
+
+.quiz-placeholder__icon {
+  font-size: 96px;
+}
+
+.quiz-placeholder__title {
+  font-size: var(--font-size-2xl);
+  color: var(--color-primary-dark);
+}
+
+.quiz-placeholder__desc {
+  font-size: var(--font-size-md);
+  color: var(--color-text-light);
+}
+
+.quiz-placeholder__tag {
+  display: inline-block;
+  padding: var(--space-xs) var(--space-md);
+  background: var(--color-secondary);
+  color: #fff;
+  border-radius: var(--radius-xl);
+  font-weight: 700;
+  font-size: var(--font-size-sm);
+}
+
+/* ---------- 12. RESULTADOS ---------- */
+.results-card {
+  width: 100%;
+  max-width: 540px;
+  background: var(--color-card);
+  border-radius: var(--radius-xl);
+  padding: var(--space-xl) var(--space-lg);
+  box-shadow: var(--shadow-lg);
+  border: 3px solid var(--color-border);
+}
+
+.stars {
+  font-size: var(--font-size-3xl);
+  text-align: center;
+  margin: var(--space-lg) 0;
+  letter-spacing: 8px;
+}
+
+.results-stats {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin: var(--space-lg) 0;
+}
+
+.results-stats li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-muted);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-md);
+}
+
+.results-stats strong {
+  color: var(--color-primary-dark);
+  font-size: var(--font-size-lg);
+}
+
+.results-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  justify-content: center;
+  margin-top: var(--space-lg);
+}
+
+/* ---------- 13. PLACEHOLDER CARDS (ajustes / highscores) ---------- */
+.placeholder-card {
+  width: 100%;
+  max-width: 480px;
+  padding: var(--space-xl);
+  background: var(--color-card);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  border: 3px dashed var(--color-secondary);
+  text-align: center;
+}
+
+.placeholder-card h3 {
+  font-size: var(--font-size-2xl);
+  color: var(--color-secondary-dark);
+  margin-bottom: var(--space-sm);
+}
+
+.placeholder-card p {
+  color: var(--color-text-light);
+  font-size: var(--font-size-md);
+}
+
+/* ---------- 14. RESPONSIVE BÁSICO ---------- */
+@media (max-width: 768px) {
+  :root {
+    --font-size-3xl: 36px;
+    --font-size-2xl: 28px;
+    --font-size-xl: 22px;
+    --space-xl: 32px;
+  }
+
+  #app { padding: var(--space-sm); }
+
+  .title { font-size: var(--font-size-2xl); }
+
+  .menu-nav { grid-template-columns: 1fr; gap: var(--space-md); }
+
+  .game-hud__info { gap: var(--space-sm); }
+
+  .hud-item {
+    font-size: var(--font-size-xs);
+    padding: 6px var(--space-sm);
+  }
+
+  .top-bar {
+    grid-template-columns: auto;
+    grid-template-rows: auto auto;
+    justify-items: center;
+    gap: var(--space-xs);
+  }
+  .top-bar__title { grid-row: 1; }
+  .top-bar .btn-back { justify-self: start; }
+
+  .results-stats li { flex-direction: column; gap: 4px; text-align: center; }
+}
+
+@media (max-width: 420px) {
+  .btn { min-width: 100%; }
+  .results-actions { flex-direction: column; width: 100%; }
+  .game-card__icon { font-size: 72px; }
+  .logo { font-size: 64px; }
+}
+
+/* ---------- 15. REDUCED MOTION ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

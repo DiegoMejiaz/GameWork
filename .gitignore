@@ -1,0 +1,69 @@
+# ================================================================
+#  Juego Educativo — .gitignore
+# ================================================================
+
+# --- Sistema operativo ---
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.bak
+*.tmp
+*.swp
+*.swo
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# --- Editores / IDE ---
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# --- Logs ---
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# --- Python (por el http.server de desarrollo) ---
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# --- Node.js / npm (para futuro Electron) ---
+node_modules/
+dist/
+build/
+out/
+.npm
+.eslintcache
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# --- Electron build outputs (para FASE 10) ---
+release/
+dist-ssr/
+*.local
+installer/
+*.exe
+*.msi
+*.dmg
+*.AppImage
+*.deb
+*.rpm
+
+# --- Entorno local ---
+.env
+.env.local
+.env.*.local
+
+# --- Almacenamiento local de pruebas (si existen backups) ---
+*.local.json
+backups/
