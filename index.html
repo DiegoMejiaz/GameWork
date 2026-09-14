@@ -153,42 +153,91 @@
     </section>
 
     <!-- ===========================================================
-         PANTALLA 6 (extra): HIGH SCORES (placeholder simple)
+         PANTALLA 6: HIGH SCORES (funcional)
     ============================================================ -->
     <section class="screen" data-screen="highscores" hidden>
       <header class="top-bar">
         <button class="btn btn--ghost btn-back" data-action="go-menu">
           ← Volver
         </button>
-        <h2 class="top-bar__title">🏆 Mejores Puntuaciones</h2>
+        <h2 class="top-bar__title" id="hsTitle">🏆 Mejores Puntuaciones</h2>
         <span aria-hidden="true"></span>
       </header>
 
-      <div class="screen-content screen--centered">
-        <div class="placeholder-card">
-          <h3>¡Próximamente!</h3>
-          <p>Aquí aparecerán las mejores puntuaciones.</p>
+      <div class="screen-content screen--game">
+        <!-- Selector de minijuego -->
+        <div class="hs-selector" id="hsGameSelector" hidden>
+          <!-- Botones por minijuego renderizados dinámicamente -->
+        </div>
+
+        <!-- Estado vacío -->
+        <div class="hs-empty" id="hsEmpty" hidden>
+          <div class="placeholder-card">
+            <div class="placeholder-card__icon" aria-hidden="true">🔒</div>
+            <h3 id="hsEmptyTitle">¡Todavía no hay récords!</h3>
+            <p id="hsEmptyDesc">Juega una partida y aparecerás aquí.</p>
+            <button class="btn btn--primary" data-action="go-selector">
+              🎮 ¡Jugar ahora!
+            </button>
+          </div>
+        </div>
+
+        <!-- Tabla de puntuaciones -->
+        <div class="hs-table-wrap" id="hsTableWrap" hidden>
+          <h3 class="hs-subtitle" id="hsGameName">Quiz Desafío</h3>
+          <table class="hs-table" aria-label="Mejores puntuaciones">
+            <thead>
+              <tr>
+                <th scope="col" data-col="pos">#</th>
+                <th scope="col" data-col="name">Nombre</th>
+                <th scope="col" data-col="stars">⭐</th>
+                <th scope="col" data-col="score">Puntos</th>
+              </tr>
+            </thead>
+            <tbody id="hsTableBody">
+              <!-- Filas renderizadas dinámicamente -->
+            </tbody>
+          </table>
         </div>
       </div>
     </section>
 
     <!-- ===========================================================
-         PANTALLA 7 (extra): AJUSTES (placeholder simple)
+         PANTALLA 7: AJUSTES (funcional)
     ============================================================ -->
     <section class="screen" data-screen="settings" hidden>
       <header class="top-bar">
         <button class="btn btn--ghost btn-back" data-action="go-menu">
           ← Volver
         </button>
-        <h2 class="top-bar__title">⚙️ Ajustes</h2>
+        <h2 class="top-bar__title" id="settingsTitle">⚙️ Ajustes</h2>
         <span aria-hidden="true"></span>
       </header>
 
       <div class="screen-content screen--centered">
-        <div class="placeholder-card">
-          <h3>¡Próximamente!</h3>
-          <p>Aquí podrás cambiar nombre, dificultad y sonido.</p>
-        </div>
+        <form id="settingsForm" class="settings-card form" novalidate>
+          <div class="form-row">
+            <label for="settingsName" class="form-label" id="settingsNameLabel">
+              Tu nombre
+            </label>
+            <input
+              type="text"
+              id="settingsName"
+              class="form-input"
+              autocomplete="off"
+              maxlength="20"
+              placeholder="Escribe tu nombre"
+            />
+          </div>
+
+          <div class="settings-msg" id="settingsSavedMsg" role="status" aria-live="polite" hidden>
+            ✅ ¡Cambios guardados!
+          </div>
+
+          <button type="submit" class="btn btn--primary btn--lg" id="settingsSaveBtn">
+            💾 Guardar cambios
+          </button>
+        </form>
       </div>
     </section>
 
@@ -196,6 +245,9 @@
 
   <!-- Scripts en orden: dependencias primero -->
   <script src="scripts/data/texts.js"></script>
+  <script src="scripts/data/quizQuestions.js"></script>
+  <script src="scripts/systems.js"></script>
+  <script src="scripts/storage.js"></script>
   <script src="scripts/games/quiz.js"></script>
   <script src="scripts/main.js"></script>
 </body>

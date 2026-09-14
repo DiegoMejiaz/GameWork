@@ -65,14 +65,56 @@ window.TEXT = {
     }
   },
 
-  placeholders: {
-    highscores: {
-      title: '¡Próximamente!',
-      desc: 'Aquí aparecerán las mejores puntuaciones.'
-    },
-    settings: {
-      title: '¡Próximamente!',
-      desc: 'Aquí podrás cambiar nombre, dificultad y sonido.'
+  highscores: {
+    title: '🏆 Mejores Puntuaciones',
+    emptyTitle: '¡Todavía no hay récords!',
+    emptyDesc: 'Juega una partida y aparecerás aquí.',
+    table: {
+      pos: '#',
+      name: 'Nombre',
+      score: 'Puntos',
+      stars: 'Estrellas'
     }
+  },
+
+  settings: {
+    title: '⚙️ Ajustes',
+    nameLabel: 'Tu nombre',
+    namePlaceholder: 'Escribe tu nombre',
+    saveBtn: '💾 Guardar cambios',
+    savedMsg: '¡Cambios guardados!'
+  },
+
+  quiz: {
+    intro: {
+      title: '🧠 Quiz Desafío',
+      desc: 'Responde 10 preguntas y consigue puntos. ¡Haz una buena racha!',
+      rules: [
+        '3 vidas por partida',
+        '30 segundos por pregunta',
+        'Bonus por responder rápido',
+        '3 aciertos seguidos = ¡Puntos extra!'
+      ],
+      btnStart: '¡Comenzar! 🚀'
+    },
+    progress: 'Pregunta {current} de {total}',
+    feedback: {
+      correct: {
+        title: '✨ ¡CORRECTO!',
+        pointsLabel: '+{pts} puntos'
+      },
+      incorrect: {
+        title: '❌ ¡Casi!',
+        correctWas: 'La respuesta correcta era:',
+        correctAnswer: '{answer}'
+      },
+      timeout: {
+        title: '⏰ ¡Se acabó el tiempo!',
+        correctWas: 'La respuesta correcta era:',
+        correctAnswer: '{answer}'
+      }
+    },
+    btnNext: 'Siguiente →',
+    streamBadge: '🔥 Racha x{n}'
   }
 };
