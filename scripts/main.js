@@ -132,13 +132,17 @@
   const HUD = {
     init() {
       if (window.ScoreSystem) {
+        const self = this;
         ScoreSystem.onChange(function (score, streak) {
-          HUD._updateScore(score, streak);
+          HUD._updateScore(score, streak, self._prevScore);
+          self._prevScore = Number.isFinite(score) ? score : (self._prevScore || 0);
         });
       }
       if (window.LivesSystem) {
+        const self = this;
         LivesSystem.onChange(function (lives, max) {
-          HUD._updateLives(lives, max);
+          HUD._updateLives(lives, max, self._prevLives);
+          self._prevLives = Number.isFinite(lives) ? lives : (self._prevLives || 0);
         });
       }
       if (window.TimerSystem) {
@@ -151,21 +155,56 @@
       }
     },
 
-    _updateScore(score, streak) {
+    _updateScore(score, streak, prevScore) {
       const el = document.getElementById('hudScore');
       if (!el) return;
       let txt = score + ' puntos';
       if (Number.isFinite(streak) && streak >= 3) txt += ' 🔥x' + streak;
+      // 6B-2: ACTUALIZACIÓN INMEDIATA (sin retardo artificial) como pediste
       el.textContent = txt;
+      // Streak class HUD
+      if (!Number.isFinite(streak) || streak < 3) {
+        el.removeAttribute('data-streak');
+      } else if (streak >= 5) {
+        el.setAttribute('data-streak', '5+');
+      } else {
+        el.setAttribute('data-streak', '3');
+      }
+      // Micro pop score SOLO si aumentó (no muestra pop en reset)
+      const wasUp = Number.isFinite(prevScore) && score > prevScore;
+      if (wasUp) {
+        el.classList.remove('hud-score--up');
+        // Force reflow para re-trigger si clase puesta en pregunta anterior
+        void el.offsetWidth;
+        el.classList.add('hud-score--up');
+        // Limpieza (300ms = duración animación)
+        window.clearTimeout(this._scoreUpT);
+        const hself = this;
+        this._scoreUpT = window.setTimeout(function () {
+          el.classList.remove('hud-score--up');
+        }, 310);
+      }
     },
 
-    _updateLives(lives, max) {
+    _updateLives(lives, max, prevLives) {
       const el = document.getElementById('hudLives');
       if (!el) return;
       const full = Math.max(0, Math.min(lives, max || 3));
       const empty = Math.max(0, (max || 3) - full);
       el.textContent = '💚'.repeat(full) + '🖤'.repeat(empty);
       el.setAttribute('title', 'Vidas: ' + full + ' / ' + max);
+      // 6B-3: Pérdida vida (diferencia < prevLives conocido)
+      const wasLost = Number.isFinite(prevLives) && lives < prevLives;
+      if (wasLost) {
+        el.classList.remove('hud-lives--lost');
+        void el.offsetWidth;
+        el.classList.add('hud-lives--lost');
+        window.clearTimeout(this._livesLostT);
+        const hself = this;
+        this._livesLostT = window.setTimeout(function () {
+          el.classList.remove('hud-lives--lost');
+        }, 250);
+      }
     },
 
     _updateTimer(secs) {
@@ -175,14 +214,20 @@
       const mm = String(Math.floor(s / 60)).padStart(2, '0');
       const ss = String(s % 60).padStart(2, '0');
       el.textContent = '⏱️ ' + mm + ':' + ss;
-      if (s <= 5 && s > 0) el.dataset.warning = 'true';
+      // 6B-3: data-warning → pulso CSS si <= 10 (hacemos el umbral menos agresivo que antes <=5)
+      if (s <= 10 && s > 0) el.dataset.warning = 'true';
       else el.removeAttribute('data-warning');
     },
 
     reset() {
+      this._prevScore = 0;
+      this._prevLives = Number.isFinite(window.LivesSystem && LivesSystem.getMax) ? LivesSystem.getMax() : 3;
       if (window.ScoreSystem) ScoreSystem.reset();
       if (window.LivesSystem) LivesSystem.set(3);
       if (window.TimerSystem) TimerSystem.reset();
+      // Limpiar timers animaciones HUD (riesgo de timers huérfanos)
+      window.clearTimeout(this._scoreUpT);
+      window.clearTimeout(this._livesLostT);
     }
   };
 
@@ -204,14 +249,82 @@
       this._setupResultsScreen();
       this._setupHighScoresScreen();
       this._setupSettingsScreen();
+
+      // FASE 6A: inicializar sistema audio (autoplay requiere gesto humano primero)
+      // FASE 6B-5: Botones pressed state global delegado 90ms
+      // (fuera de if(AudioSystem) para que funcione siempre, incluso con audio OFF)
+      const self6b = this;
+      function _applyPressed(btn) {
+        if (!btn) return;
+        btn.classList.remove('is-pressed');
+        void btn.offsetWidth;
+        btn.classList.add('is-pressed');
+        window.clearTimeout(self6b._btnPressT);
+        self6b._btnPressT = window.setTimeout(function () {
+          btn.classList.remove('is-pressed');
+        }, 92);
+      }
+      document.body.addEventListener('pointerdown', function (ev) {
+        const btn = ev.target && ev.target.closest ? ev.target.closest('.btn') : null;
+        if (!btn) return;
+        if (btn.classList && btn.classList.contains('quiz-option')) return; // opciones ya tienen animación propia correctPop/shake
+        _applyPressed(btn);
+      }, { passive: true });
+      // Pressed por teclado (Enter / Space) — accesibilidad
+      document.addEventListener('keydown', function (ev) {
+        if (ev.key !== 'Enter' && ev.key !== ' ') return;
+        const t = ev.target;
+        if (!t) return;
+        const isBtn = t.classList && t.classList.contains && t.classList.contains('btn');
+        if (!isBtn) return;
+        if (ev.repeat) return;
+        if (t.classList && t.classList.contains('quiz-option')) return;
+        _applyPressed(t);
+      }, true);
+
+      if (window.AudioSystem) {
+        AudioSystem.bootstrap();
+        // Delegado click global: reproducir 'click' cuando se pulse cualquier botón
+        // Excluye type=submit dentro de <form> para no reproducir click doble
+        // con submit-handler que ya dispara otros sonidos (welcome, settings save).
+        document.body.addEventListener('click', function (ev) {
+          if (!window.AudioSystem || !AudioSystem.isEnabled()) return;
+          const btn = ev.target && ev.target.closest ? ev.target.closest('.btn') : null;
+          if (!btn) return;
+          if (btn.tagName === 'BUTTON' && btn.type === 'submit' && btn.closest('form')) return;
+          // Excluir opciones del quiz (ya reproducen correct/incorrect propios)
+          if (btn.classList.contains('quiz-option')) return;
+          // Excluir botón "Siguiente" del feedback (ya sonó correct/incorrect hace poco)
+          if (btn.classList && btn.classList.contains('quiz-fb__next')) return;
+          AudioSystem.play('click');
+        });
+
+        // Suscribirse a vidas para detectar pérdidas
+        if (window.LivesSystem) {
+          let _lastLives = null;
+          LivesSystem.onChange(function (lives, max) {
+            try {
+              if (_lastLives == null) { _lastLives = lives; return; }
+              if (lives < _lastLives) {
+                AudioSystem.play('lifeLost');
+              }
+              _lastLives = lives;
+            } catch (_) { _lastLives = lives; }
+          });
+        }
+      }
+
       ScreenManager.show('welcome');
     },
 
     /* ---------------- Registro de minijuegos ---------------- */
     _registerGames() {
-      if (window.GAMES && window.GAMES.quiz) {
-        GameRegistry.register(window.GAMES.quiz);
-      }
+      const games = Object.values(window.GAMES || {});
+      games.forEach(function (game) {
+        if (game && game.id && typeof game.init === 'function') {
+          GameRegistry.register(game);
+        }
+      });
     },
 
     /* ---------------- Carga nombre guardado ---------------- */
@@ -265,6 +378,77 @@
       if (window.Storage) Storage.save('player_name', name);
     },
 
+    /* ---------- FASE 5C: ESTADÍSTICAS LOCALES PERSISTENTES ---------- */
+    _statsKey: 'player_stats',
+
+    _statsDefaults() {
+      return {
+        totalGames: 0,
+        totalHits: 0,
+        bestStreak: 0,
+        bestStars: 0
+      };
+    },
+
+    _sanitizeStats(raw) {
+      const d = this._statsDefaults();
+      if (!raw || typeof raw !== 'object') return d;
+      const safe = function (v, min) {
+        const n = Number(v);
+        if (!Number.isFinite(n)) return min;
+        return Math.max(min, Math.floor(n));
+      };
+      return {
+        totalGames: safe(raw.totalGames, 0),
+        totalHits:  safe(raw.totalHits,  0),
+        bestStreak: safe(raw.bestStreak, 0),
+        bestStars:  safe(raw.bestStars, 0)
+      };
+    },
+
+    loadStats() {
+      const defaults = this._statsDefaults();
+      if (!window.Storage) return defaults;
+      const raw = Storage.load(this._statsKey, null);
+      return this._sanitizeStats(raw === null ? defaults : raw);
+    },
+
+    _saveStats(stats) {
+      if (!window.Storage) return;
+      Storage.save(this._statsKey, this._sanitizeStats(stats));
+    },
+
+    _recordGameStats(result) {
+      if (!result || typeof result !== 'object') return;
+      const before = this.loadStats();
+      const hits     = Math.max(0, Math.floor(Number(result.hits)        || 0));
+      const streak   = Math.max(0, Math.floor(Number(result.maxStreak)   || 0));
+      const stars    = Math.max(0, Math.min(3, Math.floor(Number(result.stars) || 0)));
+
+      const next = {
+        totalGames: before.totalGames + 1,
+        totalHits:  before.totalHits  + hits,
+        bestStreak: Math.max(before.bestStreak, streak),
+        bestStars:  Math.max(before.bestStars,  stars)
+      };
+      this._saveStats(next);
+      return next;
+    },
+
+    _renderStatsSettings() {
+      const stats = this.loadStats();
+      const s = {
+        games: document.getElementById('statGamesPlayed'),
+        hits:  document.getElementById('statTotalHits'),
+        str:   document.getElementById('statBestStreak'),
+        st:    document.getElementById('statBestStars')
+      };
+      if (s.games) s.games.textContent = String(stats.totalGames);
+      if (s.hits)  s.hits.textContent  = String(stats.totalHits);
+      if (s.str)   s.str.textContent   = String(stats.bestStreak);
+      if (s.st)    s.st.textContent    = String(stats.bestStars);
+    },
+
     /* ================================================================
        PANTALLA 2: MENÚ PRINCIPAL
        ================================================================ */
@@ -279,6 +463,7 @@
       if (editBtn) {
         editBtn.addEventListener('click', function () {
           ScreenManager.show('settings');
+          App._renderStatsSettings();
         });
       }
     },
@@ -363,7 +548,8 @@
 
       State.set({
         currentGameId: gameId,
-        currentGameInstance: instance
+        currentGameInstance: instance,
+        _statsRecordedThisGame: false
       });
 
       instance.init(container, {
@@ -410,6 +596,16 @@
         stars = data.stars;
       }
 
+      // FASE 5C: actualizar estadísticas persistentes (SOLO UNA VEZ por partida)
+      if (State.get('_statsRecordedThisGame') !== true) {
+        this._recordGameStats({
+          hits:      data.hits,
+          maxStreak: data.maxStreak,
+          stars:     stars
+        });
+        State.set('_statsRecordedThisGame', true);
+      }
+
       // Guardar en HighScores
       let previousBest = 0;
       if (window.HighScores) {
@@ -432,20 +628,74 @@
       const elBest  = document.getElementById('statBest');
       const elStars = document.getElementById('resultsStars');
       const elSubtitle = document.getElementById('resultsSubtitle');
+      const elStatsUl = document.getElementById('resultsStats');
 
-      if (elScore) elScore.textContent = data.score;
-      if (elHits)  elHits.textContent  = (data.hits || 0) + ' / ' + (data.total || 0);
+      if (elScore) {
+        elScore.classList.remove('results-stats__val--in');
+        elScore.textContent = data.score;
+        void elScore.offsetWidth;
+        elScore.classList.add('results-stats__val--in');
+      }
+      if (elHits) {
+        elHits.classList.remove('results-stats__val--in');
+        elHits.textContent  = (data.hits || 0) + ' / ' + (data.total || 0);
+        void elHits.offsetWidth;
+        elHits.classList.add('results-stats__val--in');
+      }
       if (elBest) {
-        elBest.textContent = newBest + (isRecord ? '  ¡Récord!' : '');
+        elBest.classList.remove('is-record');
+        elBest.classList.remove('results-stats__val--in');
+        if (isRecord) {
+          elBest.textContent = newBest + '  ¡Récord!';
+          elBest.classList.add('is-record');
+        } else {
+          elBest.textContent = String(newBest);
+        }
+        void elBest.offsetWidth;
+        elBest.classList.add('results-stats__val--in');
       }
       if (elSubtitle && isRecord) {
         elSubtitle.textContent = '¡Nuevo récord, ' + (playerName || 'campeón') + '! 🎉';
+      } else if (elSubtitle && data.won) {
+        elSubtitle.textContent = '¡Buen trabajo, ' + (playerName || 'campeón') + '!';
       }
 
       if (elStars) {
-        elStars.textContent = stars > 0
-          ? '⭐'.repeat(stars) + '☆'.repeat(3 - stars)
-          : '☆☆☆';
+        const spans = elStars.querySelectorAll('span.results-stars__star');
+        spans.forEach(function (sp, i) {
+          const pos = i + 1;
+          const filled = pos <= stars;
+          sp.classList.remove('is-filled', 'is-empty');
+          sp.classList.add(filled ? 'is-filled' : 'is-empty');
+          sp.textContent = filled ? '⭐' : '☆';
+        });
+        // Force reflow para activar stagger pop en stars is-filled y clase UL stats entries
+        void elStars.offsetWidth;
+        spans.forEach(function (sp, i) {
+          const pos = i + 1;
+          const filled = pos <= stars;
+          sp.classList.remove('is-staggered');
+          if (filled) sp.classList.add('is-staggered');
+        });
+      }
+      // Stagger UL stats para que entren 2º (después de estrellas)
+      if (elStatsUl) {
+        elStatsUl.classList.remove('results-stats--in');
+        void elStatsUl.offsetWidth;
+        elStatsUl.classList.add('results-stats--in');
+      }
+
+      // FASE 6A: reproducir sonidos finales (antes de mostrar pantalla)
+      if (window.AudioSystem && AudioSystem.isEnabled()) {
+        if (data.won === true) {
+          AudioSystem.play('win');
+          if (isRecord) {
+            // Récord = fanfarria especial (no reproducir win dos veces; encimamos 'record' al final)
+            setTimeout(function () { AudioSystem.play('record'); }, 680);
+          }
+        } else if (isRecord) {
+          AudioSystem.play('record');
+        }
       }
 
       ScreenManager.show('results');
@@ -524,7 +774,7 @@
       rows.forEach(function (row, idx) {
         const tr = document.createElement('tr');
         const pos = idx + 1;
-        let badge = '';
+        let badge;
         if (pos === 1) badge = '🥇';
         else if (pos === 2) badge = '🥈';
         else if (pos === 3) badge = '🥉';
@@ -534,12 +784,29 @@
           ? '⭐'.repeat(Math.min(row.stars, 3))
           : '—';
 
-        tr.innerHTML = `
-          <td data-col="pos">${badge}</td>
-          <td data-col="name">${row.name || 'Anónimo'}</td>
-          <td data-col="stars">${starsStr}</td>
-          <td data-col="score" class="hs-score"><strong>${row.score || 0}</strong></td>
-        `;
+        const tdPos = document.createElement('td');
+        tdPos.dataset.col = 'pos';
+        tdPos.textContent = badge;
+        tr.appendChild(tdPos);
+
+        const tdName = document.createElement('td');
+        tdName.dataset.col = 'name';
+        tdName.textContent = String(row.name || 'Anónimo');
+        tr.appendChild(tdName);
+
+        const tdStars = document.createElement('td');
+        tdStars.dataset.col = 'stars';
+        tdStars.textContent = starsStr;
+        tr.appendChild(tdStars);
+
+        const tdScore = document.createElement('td');
+        tdScore.dataset.col = 'score';
+        tdScore.className = 'hs-score';
+        const strongEl = document.createElement('strong');
+        strongEl.textContent = String(row.score || 0);
+        tdScore.appendChild(strongEl);
+        tr.appendChild(tdScore);
+
         tableBody.appendChild(tr);
       });
     },
@@ -554,6 +821,8 @@
       const nameInput = document.getElementById('settingsName');
       const saveBtn   = document.getElementById('settingsSaveBtn');
       const savedMsg  = document.getElementById('settingsSavedMsg');
+      const audioToggle = document.getElementById('audioToggle');
+      const audioPill  = audioToggle ? document.querySelector('label[for="audioToggle"].toggle-pill') : null;
       if (nameLabel && T.nameLabel) nameLabel.textContent = T.nameLabel;
       if (nameInput && T.namePlaceholder) nameInput.placeholder = T.namePlaceholder;
       if (saveBtn   && T.saveBtn)   saveBtn.textContent = T.saveBtn;
@@ -563,7 +832,28 @@
       ScreenManager.onBeforeShow('settings', function () {
         if (nameInput) nameInput.value = State.get('playerName') || '';
         if (savedMsg)  savedMsg.hidden = true;
+        App._renderStatsSettings();
+
+        // FASE 6A: cargar preferencia audio al entrar Settings
+        if (audioToggle) {
+          const on = window.AudioSystem ? AudioSystem.isEnabled() : true;
+          audioToggle.checked = on;
+          if (audioPill) audioPill.setAttribute('aria-checked', on ? 'true' : 'false');
+        }
       });
+
+      // FASE 6A: toggle audio (cambio inmediato + persistencia Storage)
+      if (audioToggle) {
+        audioToggle.addEventListener('change', function () {
+          const on = !!audioToggle.checked;
+          if (window.AudioSystem) AudioSystem.setEnabled(on);
+          if (audioPill) audioPill.setAttribute('aria-checked', on ? 'true' : 'false');
+          // Probar audio de confirmación: 1 click-silencio (no suena si no está 1er gesto)
+          if (on && window.AudioSystem) {
+            try { window.AudioSystem.play('click'); } catch (_) {}
+          }
+        });
+      }
 
       const form = document.getElementById('settingsForm');
       if (form) {
@@ -580,6 +870,44 @@
             savedMsg.hidden = false;
             setTimeout(function () { savedMsg.hidden = true; }, 2500);
           }
+        });
+      }
+
+      const resetBtn = document.getElementById('resetDataBtn');
+      if (resetBtn) {
+        resetBtn.addEventListener('click', function () {
+          const ok = window.confirm(
+            '¿Seguro/a que quieres borrar TODOS los datos guardados de esta aplicación?\n\n' +
+            '· Se eliminará tu nombre\n' +
+            '· Se eliminarán todas las Mejores Puntuaciones\n' +
+            '· Esta acción no puede deshacerse'
+          );
+          if (!ok) return;
+
+          if (window.Storage) Storage.clearAll();
+
+          // FASE 6A: tras reset, preferencia audio = valor inicial true (por defecto)
+          if (window.AudioSystem) {
+            AudioSystem.setEnabled(true, { skipSave: true });
+          }
+          if (audioToggle) {
+            audioToggle.checked = true;
+            if (audioPill) audioPill.setAttribute('aria-checked', 'true');
+          }
+
+          State.set('playerName', '');
+          State.set('_hsActiveGameId', null);
+          App._cleanupCurrentGame();
+
+          const welcomeInput = document.getElementById('playerName');
+          if (welcomeInput) welcomeInput.value = '';
+
+          const menuTitle = document.getElementById('menuTitle');
+          const chipName  = document.getElementById('playerChipName');
+          if (menuTitle) menuTitle.textContent = '';
+          if (chipName)  chipName.textContent = 'Jugador';
+
+          ScreenManager.show('welcome');
         });
       }
     },
@@ -600,6 +928,7 @@
 
         case 'go-settings':
           ScreenManager.show('settings');
+          App._renderStatsSettings();
           break;
 
         case 'go-menu':
@@ -641,11 +970,21 @@
           console.warn('[App] Error al destruir el juego:', err);
         }
       }
+      // FASE 7A-1: Resetear HUD para no conservar puntos/vidas/timer/racha del juego anterior
+      if (window.HUD && typeof HUD.reset === 'function') {
+        try { HUD.reset(); } catch (_) {}
+      } else {
+        // Fallback por si el orden de carga cambiara (no debería)
+        if (window.ScoreSystem) try { ScoreSystem.reset(); } catch (_) {}
+        if (window.LivesSystem) try { LivesSystem.set(3); } catch (_) {}
+        if (window.TimerSystem) try { TimerSystem.reset(); } catch (_) {}
+      }
       // Parar timer y systems para evitar que sigan corriendo en segundo plano
       if (window.TimerSystem) try { TimerSystem.reset(); } catch (_) {}
       State.set({
         currentGameId: null,
-        currentGameInstance: null
+        currentGameInstance: null,
+        _statsRecordedThisGame: false
       });
     }
   };

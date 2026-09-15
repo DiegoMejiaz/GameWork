@@ -131,7 +131,7 @@
           <p class="subtitle text-center" id="resultsSubtitle">Buen trabajo</p>
 
           <div class="stars" id="resultsStars" aria-label="Estrellas obtenidas">
-            ⭐⭐⭐
+            <span class="results-stars__star" data-pos="1">⭐</span><span class="results-stars__star" data-pos="2">⭐</span><span class="results-stars__star" data-pos="3">⭐</span>
           </div>
 
           <ul class="results-stats" id="resultsStats">
@@ -230,12 +230,81 @@
             />
           </div>
 
+          <!-- FASE 5C: ESTADÍSTICAS LOCALES BÁSICAS -->
+          <div class="settings-stats" role="region" aria-labelledby="settingsStatsTitle">
+            <h3 class="settings-stats__title" id="settingsStatsTitle">📊 Tus estadísticas</h3>
+            <div class="stats-grid">
+              <article class="stat-card stat-card--games" data-stat="games">
+                <span class="stat-card__icon" aria-hidden="true">🎮</span>
+                <div class="stat-card__body">
+                  <span class="stat-card__label">Partidas jugadas</span>
+                  <strong class="stat-card__value" id="statGamesPlayed">0</strong>
+                </div>
+              </article>
+
+              <article class="stat-card stat-card--hits" data-stat="hits">
+                <span class="stat-card__icon" aria-hidden="true">🎯</span>
+                <div class="stat-card__body">
+                  <span class="stat-card__label">Aciertos acumulados</span>
+                  <strong class="stat-card__value" id="statTotalHits">0</strong>
+                </div>
+              </article>
+
+              <article class="stat-card stat-card--streak" data-stat="streak">
+                <span class="stat-card__icon" aria-hidden="true">🔥</span>
+                <div class="stat-card__body">
+                  <span class="stat-card__label">Mejor racha</span>
+                  <strong class="stat-card__value" id="statBestStreak">0</strong>
+                </div>
+              </article>
+
+              <article class="stat-card stat-card--stars" data-stat="stars">
+                <span class="stat-card__icon" aria-hidden="true">⭐</span>
+                <div class="stat-card__body">
+                  <span class="stat-card__label">Mejores estrellas</span>
+                  <strong class="stat-card__value" id="statBestStars">0</strong>
+                </div>
+              </article>
+            </div>
+          </div>
+
+          <!-- FASE 6A: CONFIGURACIÓN DE AUDIO (ON / OFF) -->
+          <div class="settings-audio" role="group" aria-labelledby="audioTitle">
+            <div class="form-row form-row--toggle">
+              <label class="form-label form-label--toggle" id="audioTitle" for="audioToggle">
+                🔊 Sonido
+              </label>
+              <div class="toggle-wrap" aria-hidden="false">
+                <input
+                  type="checkbox"
+                  class="toggle-input visually-hidden"
+                  id="audioToggle"
+                  autocomplete="off"
+                />
+                <label for="audioToggle" class="toggle-pill" role="switch" aria-checked="true">
+                  <span class="toggle-pill__on">Activado</span>
+                  <span class="toggle-pill__knob"></span>
+                  <span class="toggle-pill__off">Desactivado</span>
+                </label>
+              </div>
+              <p class="form-row__hint">
+                Pulsa cualquier botón para activar el audio en este navegador.
+              </p>
+            </div>
+          </div>
+
           <div class="settings-msg" id="settingsSavedMsg" role="status" aria-live="polite" hidden>
             ✅ ¡Cambios guardados!
           </div>
 
           <button type="submit" class="btn btn--primary btn--lg" id="settingsSaveBtn">
             💾 Guardar cambios
+          </button>
+
+          <hr class="settings-divider" role="presentation" />
+
+          <button type="button" class="btn btn--danger btn--sm" id="resetDataBtn">
+            🗑️ Borrar datos guardados
           </button>
         </form>
       </div>
@@ -248,7 +317,9 @@
   <script src="scripts/data/quizQuestions.js"></script>
   <script src="scripts/systems.js"></script>
   <script src="scripts/storage.js"></script>
+  <script src="scripts/audio.js"></script>
   <script src="scripts/games/quiz.js"></script>
+  <script src="scripts/games/memory.js"></script>
   <script src="scripts/main.js"></script>
 </body>
 </html>

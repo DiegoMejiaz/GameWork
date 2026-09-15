@@ -242,12 +242,6 @@
         });
         this._unsubs.push(unsub);
       }
-      // Actualizar el badge de racha en vivo (cuando ScoreSystem emite cambio)
-      if (window.ScoreSystem) {
-        const self = this;
-        const unsub = ScoreSystem.onChange(function () { self._updateStreakBadge(); });
-        this._unsubs.push(unsub);
-      }
 
       this._state.index = 0;
       this._renderQuestion();
@@ -318,6 +312,8 @@
 
       // Iniciar timer de la pregunta
       if (window.TimerSystem) TimerSystem.start(this._config.timeLimit || 30);
+
+      this._updateStreakBadge();
     },
 
     _handleAnswer(chosenIdx, btnEl) {
@@ -369,6 +365,7 @@
     _applyCorrect(remainingSecs) {
       const stats = this._state.stats;
       stats.hits += 1;
+      let added = 100;
 
       if (window.ScoreSystem) {
         ScoreSystem.addStreakSuccess();
@@ -377,7 +374,7 @@
         let timeBonus = 5;
         if (remainingSecs >= 20) timeBonus = 60;
         else if (remainingSecs >= 10) timeBonus = 30;
-        ScoreSystem.add(100, { timeBonus: timeBonus });
+        added = ScoreSystem.add(100, { timeBonus: timeBonus }) || added;
 
         stats.maxStreak = Math.max(stats.maxStreak, ScoreSystem.getStreak());
         stats.score = ScoreSystem.getScore();
@@ -386,6 +383,20 @@
       }
 
       stats.timeSpentSecs += Math.max(0, (this._config.timeLimit || 30) - remainingSecs);
+
+      // FASE 6B-1: guardar puntos reales para el feedback
+      this._state._lastAddedPoints = Number.isFinite(added) ? added : 100;
+      this._state._lastTimeBonus  = Number.isFinite(remainingSecs)
+        ? (remainingSecs >= 20 ? 60 : (remainingSecs >= 10 ? 30 : 5))
+        : 0;
+      this._state._lastMultiplier = window.ScoreSystem ? ScoreSystem.getMultiplier() : 1.0;
+
+      // FASE 6A: sonido respuesta correcta
+      if (window.AudioSystem) {
+        try { AudioSystem.play('correct'); } catch (_) {}
+      }
+
+      this._updateStreakBadge();
     },
 
     _applyIncorrect(isTimeout) {
@@ -393,6 +404,13 @@
       if (window.LivesSystem) LivesSystem.lose();
       // tiempo gastado ~= timeLimit completo (timeout) o algo
       this._state.stats.timeSpentSecs += Math.floor((this._config.timeLimit || 30) * 0.5);
+
+      // FASE 6A: sonido respuesta incorrecta (o timeout)
+      if (window.AudioSystem) {
+        try { AudioSystem.play('incorrect'); } catch (_) {}
+      }
+
+      this._updateStreakBadge();
     },
 
     _paintFeedback(correct, chosenIdx, timeout) {
@@ -400,41 +418,97 @@
       if (!wrap) return;
       const fb = T.feedback || {};
       if (correct) {
-        const added = 100; // aprox visible, el HUD ya muestra el real
+        const added = Number.isFinite(this._state._lastAddedPoints)
+          ? this._state._lastAddedPoints
+          : 100;
+        const bonus = this._state._lastTimeBonus || 0;
+        const mult = this._state._lastMultiplier || 1.0;
         const ptsText = (fb.correct && fb.correct.pointsLabel)
-          ? fb.correct.pointsLabel.replace('{pts}', added + ' + bonus')
-          : '+100 puntos';
-        wrap.innerHTML = `
-          <div class="quiz-fb quiz-fb--correct">
-            <div class="quiz-fb__title">${fb.correct ? (fb.correct.title || '✨ Correcto') : '✨ Correcto'}</div>
-            <div class="quiz-fb__points">${ptsText}</div>
-            <button class="btn btn--primary quiz-fb__next" type="button">${T.btnNext || 'Siguiente →'}</button>
-          </div>
-        `;
+          ? fb.correct.pointsLabel.replace('{pts}', String(added))
+          : ('+' + added + ' puntos');
+        const showBreakdown = bonus > 0 || mult > 1.0;
+        let breakdownHtml = '';
+        if (showBreakdown) {
+          const parts = [];
+          parts.push('Base 100');
+          if (bonus > 0)   parts.push('⏱️ +' + bonus);
+          if (mult > 1.0)  parts.push('🔥 ×' + (String(Math.round(mult * 100) / 100)).replace('.00','').replace('.0',''));
+          breakdownHtml = ' <span class="quiz-fb__pts-break">(' + parts.join(' · ') + ')</span>';
+        }
+        wrap.innerHTML = '';
+        const fbCard = document.createElement('div');
+        fbCard.className = 'quiz-fb quiz-fb--correct';
+        const titleEl = document.createElement('div');
+        titleEl.className = 'quiz-fb__title';
+        titleEl.textContent = fb.correct ? (fb.correct.title || '✨ Correcto') : '✨ Correcto';
+        const ptsEl = document.createElement('div');
+        ptsEl.className = 'quiz-fb__points quiz-fb__points--pop';
+        ptsEl.textContent = ptsText;
+        if (breakdownHtml) {
+          const brk = document.createElement('span');
+          brk.className = 'quiz-fb__breakdown';
+          brk.innerHTML = breakdownHtml;
+          ptsEl.appendChild(document.createTextNode(' '));
+          ptsEl.appendChild(brk);
+        }
+        const btnNext = document.createElement('button');
+        btnNext.className = 'btn btn--primary quiz-fb__next';
+        btnNext.type = 'button';
+        btnNext.textContent = T.btnNext || 'Siguiente →';
+        fbCard.appendChild(titleEl);
+        fbCard.appendChild(ptsEl);
+        fbCard.appendChild(btnNext);
+        wrap.appendChild(fbCard);
       } else if (timeout) {
-        const ans = this._currentCorrectOptionText();
-        wrap.innerHTML = `
-          <div class="quiz-fb quiz-fb--timeout">
-            <div class="quiz-fb__title">${fb.timeout ? (fb.timeout.title || '⏰ Tiempo') : '⏰ Tiempo'}</div>
-            <div class="quiz-fb__meta">
-              ${fb.timeout ? (fb.timeout.correctWas || 'La correcta era:') : 'La correcta era:'}
-              <strong class="quiz-fb__answer">${ans}</strong>
-            </div>
-            <button class="btn btn--primary quiz-fb__next" type="button">${T.btnNext || 'Siguiente →'}</button>
-          </div>
-        `;
+        wrap.innerHTML = '';
+        const fbCard = document.createElement('div');
+        fbCard.className = 'quiz-fb quiz-fb--timeout';
+        const titleEl = document.createElement('div');
+        titleEl.className = 'quiz-fb__title';
+        titleEl.textContent = fb.timeout ? (fb.timeout.title || '⏰ Tiempo') : '⏰ Tiempo';
+        const metaEl = document.createElement('div');
+        metaEl.className = 'quiz-fb__meta';
+        const lbl = document.createElement('span');
+        lbl.textContent = fb.timeout ? (fb.timeout.correctWas || 'La correcta era:') : 'La correcta era:';
+        const ans = document.createElement('strong');
+        ans.className = 'quiz-fb__answer';
+        ans.textContent = this._currentCorrectOptionText();
+        metaEl.appendChild(lbl);
+        metaEl.appendChild(document.createTextNode(' '));
+        metaEl.appendChild(ans);
+        const btnNext = document.createElement('button');
+        btnNext.className = 'btn btn--primary quiz-fb__next';
+        btnNext.type = 'button';
+        btnNext.textContent = T.btnNext || 'Siguiente →';
+        fbCard.appendChild(titleEl);
+        fbCard.appendChild(metaEl);
+        fbCard.appendChild(btnNext);
+        wrap.appendChild(fbCard);
       } else {
-        const ans = this._currentCorrectOptionText();
-        wrap.innerHTML = `
-          <div class="quiz-fb quiz-fb--incorrect">
-            <div class="quiz-fb__title">${fb.incorrect ? (fb.incorrect.title || '❌ Casi') : '❌ Casi'}</div>
-            <div class="quiz-fb__meta">
-              ${fb.incorrect ? (fb.incorrect.correctWas || 'La correcta era:') : 'La correcta era:'}
-              <strong class="quiz-fb__answer">${ans}</strong>
-            </div>
-            <button class="btn btn--primary quiz-fb__next" type="button">${T.btnNext || 'Siguiente →'}</button>
-          </div>
-        `;
+        wrap.innerHTML = '';
+        const fbCard = document.createElement('div');
+        fbCard.className = 'quiz-fb quiz-fb--incorrect';
+        const titleEl = document.createElement('div');
+        titleEl.className = 'quiz-fb__title';
+        titleEl.textContent = fb.incorrect ? (fb.incorrect.title || '❌ Casi') : '❌ Casi';
+        const metaEl = document.createElement('div');
+        metaEl.className = 'quiz-fb__meta';
+        const lbl = document.createElement('span');
+        lbl.textContent = fb.incorrect ? (fb.incorrect.correctWas || 'La correcta era:') : 'La correcta era:';
+        const ans = document.createElement('strong');
+        ans.className = 'quiz-fb__answer';
+        ans.textContent = this._currentCorrectOptionText();
+        metaEl.appendChild(lbl);
+        metaEl.appendChild(document.createTextNode(' '));
+        metaEl.appendChild(ans);
+        const btnNext = document.createElement('button');
+        btnNext.className = 'btn btn--primary quiz-fb__next';
+        btnNext.type = 'button';
+        btnNext.textContent = T.btnNext || 'Siguiente →';
+        fbCard.appendChild(titleEl);
+        fbCard.appendChild(metaEl);
+        fbCard.appendChild(btnNext);
+        wrap.appendChild(fbCard);
       }
 
       const nextBtn = wrap.querySelector('.quiz-fb__next');
@@ -461,17 +535,19 @@
         ? window.TEXTS.quiz.streamBadge.replace('{n}', streak)
         : ('🔥 Racha x' + streak);
       if (streak >= 3) {
-        if (badge) {
-          badge.textContent = ruleText;
-          // trigger re-animation
-          badge.style.animation = 'none';
-          void badge.offsetWidth;
-          badge.style.animation = '';
-        } else {
-          const span = document.createElement('div');
-          span.className = 'quiz-meta__streak';
-          span.textContent = ruleText;
-          meta.appendChild(span);
+        let el = badge;
+        let isNew = false;
+        if (!el) {
+          el = document.createElement('div');
+          el.className = 'quiz-meta__streak';
+          meta.appendChild(el);
+          isNew = true;
+        }
+        el.textContent = ruleText;
+        if (streak >= 5) el.setAttribute('data-level', '5');
+        else             el.setAttribute('data-level', '3');
+        if (isNew) {
+          el.classList.add('quiz-meta__streak--pop');
         }
       } else if (badge) {
         badge.remove();
